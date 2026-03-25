@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Boba Bliss — Kiosk</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:        #faf6f0;
+    --dark:      #2b1a0e;
+    --brown:     #5c3317;
+    --gold:      #c9973a;
+    --gold-lt:   #e8c97a;
+    --cream:     #f2e8d5;
+    --cream2:    #e8dcc8;
+    --green:     #4a6741;
+    --green-lt:  #d4e8c2;
+    --card-bg:   #ffffff;
+    --shadow:    0 4px 20px rgba(43,26,14,.10);
+    --radius:    18px;
+    --tag-popular: #c9973a;
+    --tag-new:     #4a6741;
+    --tag-must:    #8b4513;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--dark);
+    overflow: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── SCREEN ROUTER ── */
+  .screen { display: none; width: 100%; height: 100%; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ══════════════════════════════
+     WELCOME SCREEN
+  ══════════════════════════════ */
+  #welcome {
+    align-items: center; justify-content: center;
+    background: var(--dark);
+    position: relative; overflow: hidden;
+  }
+  #welcome::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 110%, #5c3317 0%, transparent 65%),
+                radial-gradient(ellipse 60% 40% at 80% 20%, #3d2010 0%, transparent 60%);
+  }
+  .welcome-bubbles {
+    position: absolute; inset: 0; pointer-events: none;
+  }
+  .bubble {
+    position: absolute; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(201,151,58,.5), rgba(92,51,23,.3));
+    animation: float linear infinite;
+  }
+  @keyframes float {
+    0%   { transform: translateY(110vh) scale(1); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: .7; }
+    100% { transform: translateY(-20vh) scale(1.1); opacity: 0; }
+  }
+  .welcome-content {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 28px;
+    text-align: center;
+  }
+  .welcome-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 72px; font-weight: 700;
+    color: var(--gold-lt);
+    letter-spacing: -1px;
+    text-shadow: 0 4px 30px rgba(201,151,58,.4);
+  }
+  .welcome-tagline {
+    font-size: 22px; font-weight: 300;
+    color: rgba(255,255,255,.65);
+    letter-spacing: 4px; text-transform: uppercase;
+  }
+  .tap-btn {
+    margin-top: 20px;
+    padding: 28px 72px;
+    background: var(--gold);
+    color: var(--dark);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 22px; font-weight: 500;
+    border: none; border-radius: 100px;
+    cursor: pointer;
+    box-shadow: 0 8px 40px rgba(201,151,58,.45);
+    animation: pulse 2.5s ease-in-out infinite;
+    letter-spacing: 1px;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .tap-btn:active { transform: scale(.96); box-shadow: 0 4px 20px rgba(201,151,58,.3); }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 8px 40px rgba(201,151,58,.45); }
+    50%      { box-shadow: 0 8px 60px rgba(201,151,58,.75); }
+  }
+
+  /* ══════════════════════════════
+     MENU SCREEN
+  ══════════════════════════════ */
+  #menu { flex-direction: column; overflow: hidden; }
+
+  .menu-header {
+    background: var(--dark);
+    padding: 18px 36px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; gap: 20px;
+  }
+  .header-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 30px; color: var(--gold-lt);
+  }
+  .header-logo span { font-size: 15px; font-weight: 300; color: rgba(255,255,255,.45); display: block; letter-spacing: 2px; }
+
+  .cat-tabs {
+    display: flex; gap: 8px; flex: 1; justify-content: center;
+  }
+  .cat-tab {
+    padding: 12px 26px;
+    background: transparent;
+    border: 2px solid rgba(255,255,255,.2);
+    border-radius: 100px;
+    color: rgba(255,255,255,.65);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 500;
+    cursor: pointer;
+    transition: all .2s;
+    letter-spacing: .5px;
+  }
+  .cat-tab.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--dark);
+  }
+  .cat-tab:active { transform: scale(.95); }
+
+  .header-cart-btn {
+    position: relative;
+    padding: 12px 22px;
+    background: var(--brown);
+    border: none; border-radius: 14px;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: background .2s;
+    white-space: nowrap;
+  }
+  .header-cart-btn:active { background: #8b4513; }
+  .cart-count {
+    background: var(--gold);
+    color: var(--dark);
+    border-radius: 50%; width: 22px; height: 22px;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Category Header */
+  .menu-body { flex: 1; overflow-y: auto; padding: 28px 36px 120px; }
+  .menu-body::-webkit-scrollbar { width: 6px; }
+  .menu-body::-webkit-scrollbar-track { background: transparent; }
+  .menu-body::-webkit-scrollbar-thumb { background: var(--cream2); border-radius: 3px; }
+
+  .cat-section { margin-bottom: 36px; }
+  .cat-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px; letter-spacing: 5px; text-transform: uppercase;
+    color: var(--brown); margin-bottom: 18px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .cat-title::after { content: ''; flex: 1; height: 1px; background: var(--cream2); }
+
+  .items-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .item-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 20px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    box-shadow: var(--shadow);
+    transition: transform .15s, border-color .15s, box-shadow .15s;
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: 6px;
+    min-height: 130px;
+  }
+  .item-card:active { transform: scale(.97); box-shadow: 0 2px 10px rgba(43,26,14,.08); }
+  .item-card.popular  { border-color: var(--tag-popular); }
+  .item-card.new-item { border-color: var(--tag-new); }
+
+  .item-tag {
+    position: absolute; top: 12px; right: 12px;
+    font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 20px;
+  }
+  .tag-popular { background: var(--tag-popular); color: #fff; }
+  .tag-new     { background: var(--tag-new);     color: #fff; }
+  .tag-must    { background: var(--tag-must);     color: #fff; }
+
+  .item-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px; font-weight: 700;
+    color: var(--dark); line-height: 1.2;
+    padding-right: 48px;
+  }
+  .item-desc {
+    font-size: 12px; font-weight: 300;
+    color: #7a6a58; line-height: 1.4;
+    flex: 1;
+  }
+  .item-price {
+    font-size: 18px; font-weight: 700;
+    color: var(--gold);
+    margin-top: 4px;
+  }
+
+  /* ── Seasonal Strip ── */
+  .seasonal-strip {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--dark);
+    padding: 14px 36px;
+    display: flex; align-items: center; gap: 28px;
+    z-index: 10; overflow: hidden;
+  }
+  .seasonal-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+    color: var(--gold); white-space: nowrap;
+  }
+  .seasonal-scroll {
+    display: flex; gap: 36px; animation: scroll-left 18s linear infinite;
+  }
+  @keyframes scroll-left {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .seasonal-item { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .seasonal-item-name { color: #fff; font-size: 14px; font-weight: 400; white-space: nowrap; }
+  .seasonal-item-price { color: var(--gold-lt); font-size: 14px; font-weight: 700; }
+  .seasonal-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); opacity: .4; }
+
+  /* ══════════════════════════════
+     CUSTOMISE MODAL
+  ══════════════════════════════ */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(20,10,0,.55);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; animation: fadeIn .2s; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--bg);
+    border-radius: 24px;
+    width: min(680px, 92vw);
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 36px;
+    position: relative;
+    animation: slideUp .25s ease-out;
+  }
+  @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal::-webkit-scrollbar { width: 0; }
+
+  .modal-close {
+    position: absolute; top: 20px; right: 20px;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--cream2); border: none; cursor: pointer;
+    font-size: 20px; color: var(--dark);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:active { background: var(--cream); }
+
+  .modal-item-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px; color: var(--dark);
+    margin-bottom: 6px;
+  }
+  .modal-item-desc { font-size: 14px; color: #7a6a58; margin-bottom: 20px; }
+  .modal-item-price { font-size: 22px; font-weight: 700; color: var(--gold); margin-bottom: 24px; }
+
+  .opt-group { margin-bottom: 22px; }
+  .opt-group-title {
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--brown); margin-bottom: 12px; font-weight: 500;
+  }
+  .opt-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .opt-btn {
+    padding: 11px 22px;
+    border: 2px solid var(--cream2);
+    border-radius: 100px;
+    background: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; cursor: pointer;
+    transition: all .15s; color: var(--dark);
+  }
+  .opt-btn.selected {
+    background: var(--dark); border-color: var(--dark); color: #fff;
+  }
+  .opt-btn:active { transform: scale(.96); }
+
+  .modal-qty {
+    display: flex; align-items: center; gap: 18px;
+    margin: 24px 0;
+  }
+  .qty-btn {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--cream); border: none;
+    font-size: 22px; cursor: pointer; color: var(--dark);
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .qty-btn:active { background: var(--cream2); }
+  .qty-val { font-size: 22px; font-weight: 700; min-width: 28px; text-align: center; }
+
+  .add-btn {
+    width: 100%; padding: 22px;
+    background: var(--dark); border: none;
+    border-radius: 16px; color: var(--gold-lt);
+    font-family: 'Playfair Display', serif;
+    font-size: 20px; cursor: pointer;
+    transition: background .2s;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 28px;
+  }
+  .add-btn:active { background: var(--brown); }
+  .add-btn span { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 700; }
+
+  /* ══════════════════════════════
+     CART SCREEN
+  ══════════════════════════════ */
+  #cart { overflow: hidden; }
+
+  .cart-header {
+    background: var(--dark); padding: 22px 36px;
+    display: flex; align-items: center; gap: 20px; flex-shrink: 0;
+  }
+  .cart-back {
+    padding: 12px 20px; background: rgba(255,255,255,.1);
+    border: none; border-radius: 12px; color: #fff;
+    font-size: 20px; cursor: pointer;
+  }
+  .cart-back:active { background: rgba(255,255,255,.2); }
+  .cart-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; color: var(--gold-lt); flex: 1;
+  }
+
+  .cart-body { flex: 1; overflow-y: auto; padding: 28px 36px; }
+  .cart-body::-webkit-scrollbar { width: 0; }
+
+  .cart-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; gap: 18px; color: #b0a090;
+  }
+  .cart-empty-icon { font-size: 72px; opacity: .3; }
+  .cart-empty p { font-size: 18px; }
+
+  .cart-item {
+    background: var(--card-bg);
+    border-radius: 16px; padding: 18px 22px;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: var(--shadow);
+  }
+  .cart-item-info { flex: 1; }
+  .cart-item-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px; color: var(--dark);
+  }
+  .cart-item-mods { font-size: 12px; color: #8a7a6a; margin-top: 4px; }
+  .cart-item-price { font-size: 17px; font-weight: 700; color: var(--gold); white-space: nowrap; }
+  .cart-item-remove {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #fdecea; border: none; cursor: pointer;
+    color: #c0392b; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cart-item-remove:active { background: #fac5c0; }
+
+  .cart-qty-ctrl { display: flex; align-items: center; gap: 10px; }
+  .cqty-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--cream2); border: none; cursor: pointer;
+    font-size: 18px; color: var(--dark);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cqty-btn:active { background: var(--cream); }
+  .cqty-val { font-size: 16px; font-weight: 700; min-width: 20px; text-align: center; }
+
+  .cart-footer {
+    background: var(--card-bg);
+    padding: 24px 36px;
+    border-top: 2px solid var(--cream2);
+    flex-shrink: 0;
+  }
+  .cart-total-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 18px;
+  }
+  .cart-total-label { font-size: 16px; color: #7a6a58; }
+  .cart-total-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px; color: var(--dark);
+  }
+  .checkout-btn {
+    width: 100%; padding: 22px;
+    background: var(--gold);
+    border: none; border-radius: 16px;
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; color: var(--dark);
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .checkout-btn:active { background: var(--gold-lt); }
+
+  /* ══════════════════════════════
+     CHECKOUT SCREEN
+  ══════════════════════════════ */
+  #checkout {
+    align-items: center; justify-content: center;
+    background: var(--dark); text-align: center;
+  }
+  .checkout-content { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+  .checkout-icon { font-size: 80px; animation: bounceIn .4s; }
+  @keyframes bounceIn {
+    0%   { transform: scale(0); }
+    70%  { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  .checkout-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px; color: var(--gold-lt);
+  }
+  .checkout-sub { font-size: 18px; color: rgba(255,255,255,.55); }
+  .order-num {
+    background: var(--brown); border-radius: 16px; padding: 18px 48px;
+    font-family: 'Playfair Display', serif; font-size: 48px; color: var(--gold-lt);
+    letter-spacing: 4px;
+  }
+  .checkout-back {
+    margin-top: 12px; padding: 18px 52px;
+    background: transparent; border: 2px solid var(--gold);
+    border-radius: 100px; color: var(--gold);
+    font-family: 'DM Sans', sans-serif; font-size: 17px;
+    cursor: pointer; transition: all .2s;
+  }
+  .checkout-back:active { background: var(--gold); color: var(--dark); }
+
+  /* ── Notification toast ── */
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--dark); color: var(--gold-lt);
+    padding: 14px 28px; border-radius: 100px;
+    font-size: 15px; font-weight: 500;
+    opacity: 0; transition: opacity .25s, transform .25s;
+    z-index: 200; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ── WELCOME ── -->
+<div id="welcome" class="screen active">
+  <div class="welcome-bubbles" id="bubbleContainer"></div>
+  <div class="welcome-content">
+    <div class="welcome-logo">Boba Bliss</div>
+    <div class="welcome-tagline">handcrafted drinks, steeped with care</div>
+    <button class="tap-btn" onclick="goMenu()">✦ Tap to Order ✦</button>
+  </div>
+</div>
+
+<!-- ── MENU ── -->
+<div id="menu" class="screen">
+  <header class="menu-header">
+    <div class="header-logo">
+      Boba Bliss
+      <span>Kiosk</span>
+    </div>
+    <nav class="cat-tabs" id="catTabs"></nav>
+    <button class="header-cart-btn" onclick="goCart()">
+      🧋 View Order
+      <div class="cart-count" id="cartCount">0</div>
+    </button>
+  </header>
+
+  <div class="menu-body" id="menuBody"></div>
+
+  <div class="seasonal-strip">
+    <div class="seasonal-label">Seasonal</div>
+    <div class="seasonal-scroll" id="seasonalScroll"></div>
+  </div>
+</div>
+
+<!-- ── CART ── -->
+<div id="cart" class="screen">
+  <header class="cart-header">
+    <button class="cart-back" onclick="showScreen('menu')">←</button>
+    <h2>Your Order</h2>
+  </header>
+  <div class="cart-body" id="cartBody"></div>
+  <div class="cart-footer">
+    <div class="cart-total-row">
+      <span class="cart-total-label">Total</span>
+      <span class="cart-total-val" id="cartTotal">$0.00</span>
+    </div>
+    <button class="checkout-btn" onclick="placeOrder()">Place Order →</button>
+  </div>
+</div>
+
+<!-- ── CHECKOUT ── -->
+<div id="checkout" class="screen">
+  <div class="checkout-content">
+    <div class="checkout-icon">✅</div>
+    <div class="checkout-title">Order Placed!</div>
+    <div class="checkout-sub">Please wait for your number to be called.</div>
+    <div class="order-num" id="orderNum">#42</div>
+    <div class="checkout-sub" style="margin-top:8px">Estimated wait: <strong style="color:var(--gold-lt)">5–10 min</strong></div>
+    <button class="checkout-back" onclick="resetKiosk()">Start New Order</button>
+  </div>
+</div>
+
+<!-- ── CUSTOMISE MODAL ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-item-name" id="mName"></div>
+    <div class="modal-item-desc" id="mDesc"></div>
+    <div class="modal-item-price" id="mPrice"></div>
+
+    <div class="opt-group">
+      <div class="opt-group-title">Size</div>
+      <div class="opt-row" id="sizeOpts"></div>
+    </div>
+    <div class="opt-group">
+      <div class="opt-group-title">Ice Level</div>
+      <div class="opt-row" id="iceOpts"></div>
+    </div>
+    <div class="opt-group">
+      <div class="opt-group-title">Sweetness</div>
+      <div class="opt-row" id="sweetOpts"></div>
+    </div>
+    <div class="opt-group">
+      <div class="opt-group-title">Add-Ons <span style="font-size:11px;color:#aaa;font-style:italic">+$0.75 each</span></div>
+      <div class="opt-row" id="addonOpts"></div>
+    </div>
+
+    <div class="modal-qty">
+      <button class="qty-btn" onclick="changeQty(-1)">−</button>
+      <div class="qty-val" id="qtyVal">1</div>
+      <button class="qty-btn" onclick="changeQty(1)">+</button>
+    </div>
+
+    <button class="add-btn" onclick="addToCart()">
+      Add to Order
+      <span id="addBtnTotal">$0.00</span>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════
+const MENU = {
+  "Milk Teas": [
+    { id:1,  name:"Taro Pearl Milk Tea",      desc:"Creamy taro with chewy tapioca pearls and fresh milk",            price:6.25, tag:"popular" },
+    { id:2,  name:"Thai Pearl Milk Tea",       desc:"Bold Thai tea with sweetened condensed milk and pearls",         price:6.25 },
+    { id:3,  name:"Tiger Boba",               desc:"Brown sugar syrup swirled through fresh milk and tapioca pearls", price:6.50, tag:"popular" },
+    { id:4,  name:"Golden Retriever",         desc:"Honey black milk tea with golden tapioca and cream foam",         price:6.75, tag:"new" },
+    { id:5,  name:"Mango Green Milk Tea",     desc:"Light green tea with fresh mango purée and coconut milk",         price:6.75 },
+    { id:6,  name:"Passion Chess",            desc:"Passionfruit milk tea with creamy chess jelly cubes",             price:6.25 },
+    { id:7,  name:"Brown Sugar Milk Tea",     desc:"Rich brown sugar syrup with fresh whole milk and pearls",         price:5.50 },
+    { id:8,  name:"Halo Halo Milk Tea",       desc:"Filipino-inspired mixed fruit, jelly, and milk tea fusion",       price:6.95, tag:"new" },
+  ],
+  "Fruit & Matcha": [
+    { id:9,  name:"Peach Tea w/ Lychee Jelly",desc:"Delicate peach green tea, bursting lychee jelly pearls",         price:6.95, tag:"popular" },
+    { id:10, name:"Mango & Passion Fruit Tea",desc:"Tropical mango and passionfruit over green tea",                 price:6.25 },
+    { id:11, name:"Berry Lychee Burst",       desc:"Mixed berry blend with lychee popping boba and green tea",       price:6.25, tag:"new" },
+    { id:12, name:"Strawberry Coconut",       desc:"Strawberry green tea with coconut jelly and coconut milk",       price:6.50 },
+    { id:13, name:"Lava Flow",                desc:"Mango and strawberry layers over coconut hibiscus tea",          price:6.95 },
+    { id:14, name:"Wintermelon Green Tea",    desc:"Traditional sweetened wintermelon over fresh green tea, no milk", price:5.50 },
+    { id:15, name:"Matcha Pearl Milk Tea",    desc:"Ceremonial grade matcha with oat milk and house tapioca pearls", price:6.50, tag:"must" },
+    { id:16, name:"Matcha Fresh Milk",        desc:"Pure ceremonial matcha whisked with cold fresh whole milk",      price:6.25 },
+    { id:17, name:"Matcha Ice Blended",       desc:"Blended ceremonial matcha frappé with whipped cream",           price:6.75, tag:"new" },
+    { id:18, name:"Matcha Latte",             desc:"Warm or iced — ceremonial grade, steamed oat milk",             price:6.25 },
+    { id:19, name:"Matcha Coconut",           desc:"Matcha and coconut milk, finished with toasted coconut flakes",  price:6.50 },
+    { id:20, name:"Hojicha Milk Tea",         desc:"Roasted green tea (hojicha) with condensed milk and pearls",    price:6.25 },
+  ],
+  "Lemonades & More": [
+    { id:21, name:"Honey Lemonade",           desc:"Fresh-squeezed lemonade sweetened with raw wildflower honey",    price:5.20 },
+    { id:22, name:"Wintermelon Lemonade",     desc:"Earthy wintermelon syrup with sparkling lemonade and aloe",     price:5.80 },
+    { id:23, name:"Honey Tea",                desc:"Golden honey blended with oolong and a citrus squeeze",         price:4.85 },
+    { id:24, name:"Water",                    desc:"Still mineral water — plain and refreshing",                    price:1.00 },
+  ],
+};
+
+const SEASONAL = [
+  { name:"Sakura Milk Tea",       price:6.75 },
+  { name:"Yuzu Honey Green Tea",  price:6.50 },
+  { name:"Pumpkin Spice Milk Tea",price:6.50 },
+  { name:"Strawberry Matcha Latte",price:6.75 },
+];
+
+const SIZES  = ["Regular (16 oz)", "Large (24 oz +$0.75)"];
+const ICE    = ["No Ice", "Light Ice", "Normal Ice", "Extra Ice"];
+const SWEET  = ["0%", "25%", "50%", "75%", "100%"];
+const ADDONS = ["Tapioca Pearls", "Lychee Jelly", "Coconut Jelly", "Popping Boba", "Pudding", "Aloe"];
+
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+let cart = [];
+let currentItem = null;
+let qty = 1;
+let selSize = SIZES[0], selIce = ICE[2], selSweet = SWEET[4], selAddons = [];
+let activeCategory = Object.keys(MENU)[0];
+
+// ═══════════════════════════════════════
+//  SCREEN ROUTING
+// ═══════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goMenu() { renderMenu(); showScreen('menu'); }
+function goCart() { renderCart(); showScreen('cart'); }
+
+// ═══════════════════════════════════════
+//  BUBBLES ANIMATION
+// ═══════════════════════════════════════
+(function spawnBubbles() {
+  const c = document.getElementById('bubbleContainer');
+  for (let i = 0; i < 18; i++) {
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    const size = 20 + Math.random() * 60;
+    b.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      animation-duration:${6+Math.random()*10}s;
+      animation-delay:${Math.random()*-12}s;
+    `;
+    c.appendChild(b);
+  }
+})();
+
+// ═══════════════════════════════════════
+//  MENU RENDER
+// ═══════════════════════════════════════
+function renderMenu() {
+  const cats = Object.keys(MENU);
+
+  // Tabs
+  const tabsCont = document.getElementById('catTabs');
+  tabsCont.innerHTML = '';
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab' + (cat === activeCategory ? ' active' : '');
+    btn.textContent = cat;
+    btn.onclick = () => { activeCategory = cat; renderMenu(); };
+    tabsCont.appendChild(btn);
+  });
+
+  // Items — show only active category
+  const body = document.getElementById('menuBody');
+  body.innerHTML = '';
+  const items = MENU[activeCategory];
+  const sec = document.createElement('div');
+  sec.className = 'cat-section';
+  sec.innerHTML = `<div class="cat-title">${activeCategory}</div>`;
+  const grid = document.createElement('div');
+  grid.className = 'items-grid';
+  items.forEach(item => {
+    const card = document.createElement('div');
+    let tagClass = '';
+    let tagHTML = '';
+    if (item.tag === 'popular') { tagClass = 'popular'; tagHTML = '<div class="item-tag tag-popular">Popular</div>'; }
+    if (item.tag === 'new')     { tagClass = 'new-item'; tagHTML = '<div class="item-tag tag-new">New</div>'; }
+    if (item.tag === 'must')    { tagHTML = '<div class="item-tag tag-must">Must Try</div>'; }
+    card.className = `item-card ${tagClass}`;
+    card.innerHTML = `
+      ${tagHTML}
+      <div class="item-name">${item.name}</div>
+      <div class="item-desc">${item.desc}</div>
+      <div class="item-price">$${item.price.toFixed(2)}</div>
+    `;
+    card.onclick = () => openModal(item);
+    grid.appendChild(card);
+  });
+  sec.appendChild(grid);
+  body.appendChild(sec);
+
+  // Seasonal scroll
+  const scroll = document.getElementById('seasonalScroll');
+  const doubled = [...SEASONAL, ...SEASONAL]; // duplicate for seamless loop
+  scroll.innerHTML = doubled.map(s =>
+    `<div class="seasonal-item" onclick="openSeasonalModal('${s.name}',${s.price})">
+      <span class="seasonal-item-name">${s.name}</span>
+      <span class="seasonal-item-price">$${s.price.toFixed(2)}</span>
+     </div>
+     <div class="seasonal-dot"></div>`
+  ).join('');
+
+  updateCartCount();
+}
+
+function openSeasonalModal(name, price) {
+  const fake = { name, desc:"Limited seasonal offering — available while supplies last.", price, tag:"" };
+  openModal(fake);
+}
+
+// ═══════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════
+function openModal(item) {
+  currentItem = item;
+  qty = 1; selSize = SIZES[0]; selIce = ICE[2]; selSweet = SWEET[4]; selAddons = [];
+
+  document.getElementById('mName').textContent = item.name;
+  document.getElementById('mDesc').textContent = item.desc;
+  document.getElementById('qtyVal').textContent = qty;
+
+  renderOptsGroup('sizeOpts', SIZES, [selSize], false, v => { selSize = v; updateAddTotal(); });
+  renderOptsGroup('iceOpts', ICE, [selIce], false, v => { selIce = v; updateAddTotal(); });
+  renderOptsGroup('sweetOpts', SWEET, [selSweet], false, v => { selSweet = v; updateAddTotal(); });
+  renderOptsGroup('addonOpts', ADDONS, selAddons, true, v => {
+    if (selAddons.includes(v)) selAddons = selAddons.filter(a => a !== v);
+    else selAddons.push(v);
+    updateAddTotal();
+  });
+
+  updateAddTotal();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function renderOptsGroup(id, opts, selected, multi, onChange) {
+  const cont = document.getElementById(id);
+  cont.innerHTML = '';
+  opts.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn' + (selected.includes(opt) ? ' selected' : '');
+    btn.textContent = opt;
+    btn.onclick = () => {
+      if (!multi) cont.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.toggle('selected', multi ? !btn.classList.contains('selected') : true);
+      onChange(opt);
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function calcItemTotal() {
+  if (!currentItem) return 0;
+  let total = currentItem.price;
+  if (selSize === SIZES[1]) total += 0.75;
+  total += selAddons.length * 0.75;
+  return total * qty;
+}
+
+function updateAddTotal() {
+  document.getElementById('mPrice').textContent = `$${currentItem.price.toFixed(2)}`;
+  document.getElementById('addBtnTotal').textContent = `$${calcItemTotal().toFixed(2)}`;
+}
+
+function changeQty(delta) {
+  qty = Math.max(1, qty + delta);
+  document.getElementById('qtyVal').textContent = qty;
+  updateAddTotal();
+}
+
+function addToCart() {
+  const mods = [selSize, `Ice: ${selIce}`, `Sweet: ${selSweet}`, ...selAddons].join(' · ');
+  cart.push({
+    id: Date.now(),
+    name: currentItem.name,
+    price: currentItem.price,
+    size: selSize,
+    ice: selIce,
+    sweet: selSweet,
+    addons: [...selAddons],
+    qty,
+    lineTotal: calcItemTotal(),
+    mods,
+  });
+  updateCartCount();
+  closeModal();
+  showToast(`Added ${currentItem.name}`);
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════
+//  CART
+// ═══════════════════════════════════════
+function updateCartCount() {
+  const total = cart.reduce((s, i) => s + i.qty, 0);
+  document.getElementById('cartCount').textContent = total;
+}
+
+function renderCart() {
+  const body = document.getElementById('cartBody');
+  if (cart.length === 0) {
+    body.innerHTML = `<div class="cart-empty">
+      <div class="cart-empty-icon">🧋</div>
+      <p>Your order is empty</p>
+    </div>`;
+    document.getElementById('cartTotal').textContent = '$0.00';
+    return;
+  }
+  body.innerHTML = '';
+  cart.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'cart-item';
+    row.innerHTML = `
+      <div class="cart-item-info">
+        <div class="cart-item-name">${item.name}</div>
+        <div class="cart-item-mods">${item.mods}</div>
+      </div>
+      <div class="cart-qty-ctrl">
+        <button class="cqty-btn" onclick="cartQty(${item.id},-1)">−</button>
+        <div class="cqty-val">${item.qty}</div>
+        <button class="cqty-btn" onclick="cartQty(${item.id},1)">+</button>
+      </div>
+      <div class="cart-item-price">$${item.lineTotal.toFixed(2)}</div>
+      <button class="cart-item-remove" onclick="removeFromCart(${item.id})">✕</button>
+    `;
+    body.appendChild(row);
+  });
+  const total = cart.reduce((s, i) => s + i.lineTotal, 0);
+  document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
+}
+
+function cartQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  item.qty = Math.max(1, item.qty + delta);
+  const base = item.lineTotal / (item.qty - delta);
+  item.lineTotal = base * item.qty;
+  updateCartCount();
+  renderCart();
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(i => i.id !== id);
+  updateCartCount();
+  renderCart();
+}
+
+// ═══════════════════════════════════════
+//  ORDER / CHECKOUT
+// ═══════════════════════════════════════
+function placeOrder() {
+  if (cart.length === 0) { showToast('Add something first!'); return; }
+  const num = Math.floor(Math.random() * 89) + 10;
+  document.getElementById('orderNum').textContent = `#${num}`;
+  showScreen('checkout');
+}
+
+function resetKiosk() {
+  cart = [];
+  updateCartCount();
+  showScreen('welcome');
+}
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>
